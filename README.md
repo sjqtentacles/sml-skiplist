@@ -73,6 +73,27 @@ Inserting an existing key overwrites its value without growing the map;
 deleting an absent key is a no-op. `toList` always returns bindings in strictly
 ascending key order.
 
+## Example
+
+`make example` builds and runs [`examples/demo.sml`](examples/demo.sml), which
+instantiates the functor over `int` keys, inserts a handful of bindings, and
+walks `find`/`min`/`max`/`toList`/`size`/`delete` (output is byte-identical
+under MLton and Poly/ML):
+
+```
+Inserted keys [5,2,8,1,9,3] with value = key*3+1:
+  toList = [(1,4), (2,7), (3,10), (5,16), (8,25), (9,28)]
+  size = 6
+  find 8 = SOME 25
+  find 4 = NONE
+  min = SOME (1,4)
+  max = SOME (9,28)
+
+After delete 8:
+  toList = [(1,4), (2,7), (3,10), (5,16), (9,28)]
+  size = 5
+```
+
 ## Testing
 
 ```
