@@ -137,6 +137,111 @@ struct
           oraclePairs
       val () = check "toList equals oracle after deletes"
                  (oracleAfter = M.toList m2)
+
+      (* Section 7: properties (sml-check) *)
+      val () = section "properties (sml-check)"
+
+      val smallInt = Check.choose (~1000, 1000)
+      val genPair = Check.tuple2 (smallInt, smallInt)
+      val genList = Check.listOf genPair
+
+      fun showPair (k, v) = "(" ^ Int.toString k ^ "," ^ Int.toString v ^ ")"
+      fun showPairList xs = "[" ^ String.concatWith "," (List.map showPair xs) ^ "]"
+      fun showIntList xs = "[" ^ String.concatWith "," (List.map Int.toString xs) ^ "]"
+
+      fun dedupKeys ks =
+        List.foldr
+          (fn (k, acc) => if List.exists (fn k' => k' = k) acc then acc else k :: acc)
+          [] ks
+
+      fun buildFromPairs xs = List.foldl (fn ((k, v), m) => M.insert m k v) M.empty xs
+
+      (* insert-then-find returns the inserted value. *)
+      val () =
+        Harness.check "prop: insert-then-find returns the inserted value"
+          (case Check.quickCheck
+                  (Check.forAll
+                     (Check.tuple3 (genList, smallInt, smallInt))
+                     (fn (xs, k, v) => showPairList xs ^ " k=" ^ Int.toString k
+                                        ^ " v=" ^ Int.toString v)
+                     (fn (xs, k, v) =>
+                        let val m = buildFromPairs xs
+                            val m' = M.insert m k v
+                        in M.find m' k = SOME v end)) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
+
+      (* delete-then-find returns NONE, whether or not the key was present. *)
+      val () =
+        Harness.check "prop: delete-then-find returns NONE"
+          (case Check.quickCheck
+                  (Check.forAll
+                     (Check.tuple2 (genList, smallInt))
+                     (fn (xs, k) => showPairList xs ^ " k=" ^ Int.toString k)
+                     (fn (xs, k) =>
+                        let val m = buildFromPairs xs
+                            val m' = M.delete m k
+                        in M.find m' k = NONE end)) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
+
+      (* toList built from any insert list comes back in strictly ascending
+         key order. *)
+      val () =
+        Harness.check "prop: toList keys are strictly ascending"
+          (case Check.quickCheck
+                  (Check.forAll genList showPairList
+                     (fn xs => isAscending (M.toList (buildFromPairs xs)))) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
+
+      (* inserting a set of distinct keys yields a map of exactly that size. *)
+      val () =
+        Harness.check "prop: size after inserting N distinct keys = N"
+          (case Check.quickCheck
+                  (Check.forAll (Check.listOf smallInt) showIntList
+                     (fn ks =>
+                        let val distinct = dedupKeys ks
+                            val m = buildFromPairs (List.map (fn k => (k, k)) distinct)
+                        in M.size m = List.length distinct end)) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
+
+      (* re-inserting the same key with a different value overwrites in
+         place: the size doesn't grow and the new value wins. *)
+      val () =
+        Harness.check "prop: insert on an existing key overwrites, not duplicates"
+          (case Check.quickCheck
+                  (Check.forAll
+                     (Check.tuple2 (genList, Check.tuple3 (smallInt, smallInt, smallInt)))
+                     (fn (xs, (k, v1, v2)) =>
+                        showPairList xs ^ " k=" ^ Int.toString k
+                        ^ " v1=" ^ Int.toString v1 ^ " v2=" ^ Int.toString v2)
+                     (fn (xs, (k, v1, v2)) =>
+                        let val m = buildFromPairs xs
+                            val m1 = M.insert m k v1
+                            val m2' = M.insert m1 k v2
+                        in M.find m2' k = SOME v2
+                           andalso M.size m2' = M.size m1
+                        end)) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
+
+      (* delete then reinsert round-trips to the new value. *)
+      val () =
+        Harness.check "prop: delete-then-reinsert round-trips"
+          (case Check.quickCheck
+                  (Check.forAll
+                     (Check.tuple3 (genList, smallInt, smallInt))
+                     (fn (xs, k, v) => showPairList xs ^ " k=" ^ Int.toString k
+                                        ^ " v=" ^ Int.toString v)
+                     (fn (xs, k, v) =>
+                        let val m = buildFromPairs xs
+                            val m1 = M.delete m k
+                            val m2' = M.insert m1 k v
+                        in M.find m2' k = SOME v end)) of
+               Check.Passed _ => true
+             | Check.Failed _ => false)
     in
       Harness.run ()
     end

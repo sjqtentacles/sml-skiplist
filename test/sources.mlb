@@ -1,4 +1,22 @@
+(* sml-check is a TEST-only dependency: the library itself depends only on
+   sml-prng in production (see ../lib/.../sml-skiplist/sources.mlb), and only
+   the property-test section additionally needs sml-check. Include order for
+   the flat Poly/ML `use` model (tools/polybuild): sml-prng -> sml-test
+   (check.sig references Test.test in its toTest bridge) -> sml-check -> our
+   own Harness -> the library under test -> the suite + entry/main shims.
+   This creates a second, independent copy of the Prng/SplitMix64 structures
+   used only by Check; MLB scopes each imported .mlb file's basis from its
+   own contents, so the skiplist library's own (self-contained) import of
+   sml-prng inside its sources.mlb is unaffected. *)
+
 $(SML_LIB)/basis/basis.mlb
+
+../lib/github.com/sjqtentacles/sml-prng/prng.sig
+../lib/github.com/sjqtentacles/sml-prng/prng.sml
+../lib/github.com/sjqtentacles/sml-test/test.sig
+../lib/github.com/sjqtentacles/sml-test/test.sml
+../lib/github.com/sjqtentacles/sml-check/check.sig
+../lib/github.com/sjqtentacles/sml-check/check.sml
 
 ../lib/github.com/sjqtentacles/sml-skiplist/sources.mlb
 

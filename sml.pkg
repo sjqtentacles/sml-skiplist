@@ -1,5 +1,6 @@
 package github.com/sjqtentacles/sml-skiplist
 
 require {
+  github.com/sjqtentacles/sml-check
   github.com/sjqtentacles/sml-prng 0.0.0-20260621120446+2466b0395ccacfbde318e8d8fbbaec5e2c8270a3
 }
