@@ -1,5 +1,7 @@
 # sml-skiplist
 
+[![CI](https://github.com/sjqtentacles/sml-skiplist/actions/workflows/ci.yml/badge.svg)](https://github.com/sjqtentacles/sml-skiplist/actions/workflows/ci.yml)
+
 Probabilistic skip list ordered map and set functor in pure Standard ML
 
 A persistent (immutable) ordered map keyed by any totally ordered type. Tower
